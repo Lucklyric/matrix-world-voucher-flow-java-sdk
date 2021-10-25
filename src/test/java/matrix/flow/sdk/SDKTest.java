@@ -238,9 +238,9 @@ public class SDKTest {
         }
 
         // Mint Voucher if verification is success
-        final List<VoucherMetadataModel> newTokens = adminClient.batchMintVoucher(recipientList,
-                landInfoHashStringList);
+        final String txId = adminClient.batchMintVoucher(recipientList, landInfoHashStringList);
 
+        final List<VoucherMetadataModel> newTokens = adminClient.resolveBatchMintVoucherTransaction(txId);
         assert (newTokens.size() == simBatchSize);
         for (int i = 0; i < simBatchSize; i++) {
             final VoucherMetadataModel target = targetTokens.get(i);
@@ -258,47 +258,47 @@ public class SDKTest {
      *
      * @throws Exception
      */
-    @Test(timeout = 10000000)
-    public void voucherClientPoolconcurrentlysendTransaction() throws Exception {
-        // Simulate concurrent requests in backend
-        final int simTransactionCount = 100;
-        final CountDownLatch updateLatch = new CountDownLatch(simTransactionCount);
-        final ExecutorService executorService = Executors.newFixedThreadPool(simTransactionCount);
-
-        // Build pool
-        final VoucherClientPoolFactory voucherClientPoolFactory = new VoucherClientPoolFactory(adminClientConfig, 1, 5);
-        final GenericObjectPoolConfig<VoucherClient> objectPoolConfig = new GenericObjectPoolConfig<>();
-        objectPoolConfig.setMaxTotal(3); // do not exceed adminAccount's number of proposal keys
-        objectPoolConfig.setMaxWaitMillis(120000);
-        objectPoolConfig.setBlockWhenExhausted(true);
-        final GenericObjectPool<VoucherClient> objectPool = new GenericObjectPool<>(voucherClientPoolFactory,
-                objectPoolConfig);
-
-        // Start
-        for (int i = 0; i < simTransactionCount; ++i) {
-            final int idx = i;
-            executorService.execute(new Thread(() -> {
-                VoucherClient client = null;
-                try {
-                    client = objectPool.borrowObject();
-                    /* System.out.println(client.getAccountKeyIndex()); */
-                    String timeStamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date());
-                    client.mintVoucher(userAccountAddress.getBase16Value(), "TEST_HASH_POOL" + idx + timeStamp);
-                } catch (final Exception e) {
-                    e.printStackTrace();
-                    throw new RuntimeException(e);
-                } finally {
-                    if (client != null) {
-                        objectPool.returnObject(client);
-                    }
-                    updateLatch.countDown();
-                }
-            }));
-        }
-        updateLatch.await();
-        executorService.shutdown();
-        objectPool.close();
-    }
+    /* @Test(timeout = 10000000) */
+    /* public void voucherClientPoolconcurrentlysendTransaction() throws Exception { */
+    /*     // Simulate concurrent requests in backend */
+    /*     final int simTransactionCount = 100; */
+    /*     final CountDownLatch updateLatch = new CountDownLatch(simTransactionCount); */
+    /*     final ExecutorService executorService = Executors.newFixedThreadPool(simTransactionCount); */
+    /*  */
+    /*     // Build pool */
+    /*     final VoucherClientPoolFactory voucherClientPoolFactory = new VoucherClientPoolFactory(adminClientConfig, 1, 5); */
+    /*     final GenericObjectPoolConfig<VoucherClient> objectPoolConfig = new GenericObjectPoolConfig<>(); */
+    /*     objectPoolConfig.setMaxTotal(3); // do not exceed adminAccount's number of proposal keys */
+    /*     objectPoolConfig.setMaxWaitMillis(120000); */
+    /*     objectPoolConfig.setBlockWhenExhausted(true); */
+    /*     final GenericObjectPool<VoucherClient> objectPool = new GenericObjectPool<>(voucherClientPoolFactory, */
+    /*             objectPoolConfig); */
+    /*  */
+    /*     // Start */
+    /*     for (int i = 0; i < simTransactionCount; ++i) { */
+    /*         final int idx = i; */
+    /*         executorService.execute(new Thread(() -> { */
+    /*             VoucherClient client = null; */
+    /*             try { */
+    /*                 client = objectPool.borrowObject(); */
+    /*                 [> System.out.println(client.getAccountKeyIndex()); <] */
+    /*                 String timeStamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date()); */
+    /*                 client.mintVoucher(userAccountAddress.getBase16Value(), "TEST_HASH_POOL" + idx + timeStamp); */
+    /*             } catch (final Exception e) { */
+    /*                 e.printStackTrace(); */
+    /*                 throw new RuntimeException(e); */
+    /*             } finally { */
+    /*                 if (client != null) { */
+    /*                     objectPool.returnObject(client); */
+    /*                 } */
+    /*                 updateLatch.countDown(); */
+    /*             } */
+    /*         })); */
+    /*     } */
+    /*     updateLatch.await(); */
+    /*     objectPool.close(); */
+    /*     executorService.shutdown(); */
+    /* } */
 
     @Test
     public void correctSignatureVerificationShouldReturnTrue() throws Exception {

@@ -139,7 +139,7 @@ public final class VoucherClient extends FlowSimpleClient {
      *
      * @throws FlowClientException runtime exception
      */
-    public List<VoucherMetadataModel> batchMintVoucher(final List<String> recipientAddressStringList,
+    public String batchMintVoucher(final List<String> recipientAddressStringList,
             final List<String> landInfoHashStringList) throws FlowClientException {
 
         final List<AddressField> recipientAddressListC = new ArrayList<>();
@@ -182,7 +182,13 @@ public final class VoucherClient extends FlowSimpleClient {
         tx = tx.addEnvelopeSignature(this.accountAddress, senderAccountKey.getId(), signer);
 
         final FlowId txID = this.accessAPI.sendTransaction(tx);
-        final FlowTransactionResult result = this.waitForSeal(txID);
+
+        return txID.getBase16Value();
+
+    }
+
+    public List<VoucherMetadataModel> resolveBatchMintVoucherTransaction(final String transactionId) throws FlowClientException {
+        final FlowTransactionResult result = this.waitForSeal(new FlowId(transactionId));
         if (result.getStatus() != FlowTransactionStatus.SEALED) {
             throw new FlowClientException("There is something wrong with the transaction");
         }
@@ -210,12 +216,8 @@ public final class VoucherClient extends FlowSimpleClient {
                 mintedTokens.add(mintedToken);
             }
         }
-
-        if (mintedTokens.size() != landInfoHashStringList.size()) {
-            throw new FlowClientException("Number of mintedTokens not match with input size");
-        }
-
         return mintedTokens;
+
     }
 
     /**

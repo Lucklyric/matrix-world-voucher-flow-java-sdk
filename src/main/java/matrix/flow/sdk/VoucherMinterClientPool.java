@@ -16,28 +16,33 @@ public class VoucherMinterClientPool {
     public VoucherMinterClientPool(final int keyStartIndex, final int keyCapacity,
             final VoucherClientConfig minterClientBaseConfig) {
 
-        final VoucherClientPoolFactory voucherClientPoolFactory = new VoucherClientPoolFactory(minterClientBaseConfig,
-                keyStartIndex, keyCapacity);
-        final GenericObjectPoolConfig<VoucherClient> objectPoolConfig = new GenericObjectPoolConfig<>();
+        final VoucherClientPoolFactory voucherClientPoolFactory =
+                new VoucherClientPoolFactory(minterClientBaseConfig, keyStartIndex, keyCapacity);
+        final GenericObjectPoolConfig<VoucherClient> objectPoolConfig =
+                new GenericObjectPoolConfig<>();
         objectPoolConfig.setMaxTotal(keyCapacity);
-        objectPoolConfig.setMaxWaitMillis(120000); // FIXME: how to proper configure this from external
+        objectPoolConfig.setMaxIdle(keyCapacity);
+        objectPoolConfig.setMaxWaitMillis(120000); // FIXME: how to proper configure this from
+                                                   // external
         objectPoolConfig.setBlockWhenExhausted(true);
+        objectPoolConfig.setTestOnBorrow(true);
+        objectPoolConfig.setTestOnCreate(true);
         // Build pool
         this.objectPool = new GenericObjectPool<>(voucherClientPoolFactory, objectPoolConfig);
     }
 
-    public List<VoucherMetadataModel> batchMintVoucher(final List<String> recipientList,
+    public String batchMintVoucher(final List<String> recipientList,
             final List<String> landInfoHashStringList) {
 
         VoucherClient client = null;
         try {
             client = objectPool.borrowObject();
-            log.info(String.format("[VoucherMinterClientPool.batchMint] use key index %d to mint",
+            log.info(String.format(
+                    "[VoucherMinterClientPool.batchMint] use key index %d to send mint transaction",
                     client.getAccountKeyIndex()));
             return client.batchMintVoucher(recipientList, landInfoHashStringList);
         } catch (final Exception e) {
-            log.error(String.format("[VoucherMinterClientPool.batchMint] use key index %d to mint failed with %s",
-                    client.getAccountKeyIndex(), e.getMessage()));
+            log.error("[VoucherMinterClientPool.batchMintVoucher] failed with", e);
             throw new RuntimeException(e);
         } finally {
             if (client != null) {
@@ -46,7 +51,27 @@ public class VoucherMinterClientPool {
         }
     }
 
-    public VoucherMetadataModel mintVoucher(final String recipient, final String landInfoHashString) {
+    public List<VoucherMetadataModel> resolveBatchMintVoucher(final String transactionId) {
+
+        VoucherClient client = null;
+        try {
+            client = objectPool.borrowObject();
+            log.info(String.format(
+                    "[VoucherMinterClientPool.resolveBatchMintVoucher] use key index %d to resolve transactionId %s",
+                    client.getAccountKeyIndex(), transactionId));
+            return client.resolveBatchMintVoucherTransaction(transactionId);
+        } catch (final Exception e) {
+            log.error("[VoucherMinterClientPool.resolveBatchMintVoucher] failed", e);
+            throw new RuntimeException(e);
+        } finally {
+            if (client != null) {
+                objectPool.returnObject(client);
+            }
+        }
+    }
+
+    public VoucherMetadataModel mintVoucher(final String recipient,
+            final String landInfoHashString) {
 
         VoucherClient client = null;
         try {
@@ -55,8 +80,7 @@ public class VoucherMinterClientPool {
                     client.getAccountKeyIndex()));
             return client.mintVoucher(recipient, landInfoHashString);
         } catch (final Exception e) {
-            log.error(String.format("[VoucherMinterClientPool.mintVoucher] use key index %d to mint failed with %s",
-                    client.getAccountKeyIndex(), e.getMessage()));
+            log.error("[VoucherMinterClientPool.mintVoucher] failed with", e);
             throw new RuntimeException(e);
         } finally {
             if (client != null) {

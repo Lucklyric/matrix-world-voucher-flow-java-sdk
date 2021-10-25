@@ -49,10 +49,10 @@ public class VoucherMinterClientPoolTest {
     @Rule
     public ExpectedException exceptionRule = ExpectedException.none();
 
-    @Test
+    @Test(timeout = 10000000)
     public void VoucherMinterClientPoolShouldWork() throws Exception {
         // Simulate concurrent requests in backend
-        final int simTransactionCount = 100;
+        final int simTransactionCount = 11;
         final CountDownLatch updateLatch = new CountDownLatch(simTransactionCount);
         final ExecutorService executorService = Executors.newFixedThreadPool(simTransactionCount);
 
@@ -75,7 +75,8 @@ public class VoucherMinterClientPoolTest {
             }));
         }
         updateLatch.await();
-        executorService.shutdown();
+        System.out.println("Finish mint");
         pool.close();
+        executorService.shutdown();
     }
 }
