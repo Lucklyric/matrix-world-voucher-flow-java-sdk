@@ -1,16 +1,11 @@
 package matrix.flow.sdk;
 
 import static org.junit.Assert.assertTrue;
-
 import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
 import com.nftco.flow.sdk.FlowAddress;
 import com.nftco.flow.sdk.FlowId;
 import com.nftco.flow.sdk.HashAlgorithm;
@@ -20,15 +15,11 @@ import com.nftco.flow.sdk.crypto.Crypto;
 import com.nftco.flow.sdk.crypto.KeyPair;
 import com.nftco.flow.sdk.crypto.PrivateKey;
 import com.nftco.flow.sdk.crypto.PublicKey;
-
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.codec.binary.StringUtils;
-import org.apache.commons.pool2.impl.GenericObjectPool;
-import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-
 import matrix.flow.sdk.model.PaymentType;
 import matrix.flow.sdk.model.VoucherClientConfig;
 import matrix.flow.sdk.model.VoucherMetadataModel;

@@ -6,6 +6,7 @@ import org.apache.commons.pool2.impl.GenericObjectPool;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 
 import lombok.extern.log4j.Log4j2;
+import matrix.flow.sdk.model.BatchMintVoucherResult;
 import matrix.flow.sdk.model.VoucherClientConfig;
 import matrix.flow.sdk.model.VoucherMetadataModel;
 
@@ -20,6 +21,8 @@ public class VoucherMinterClientPool {
                 new VoucherClientPoolFactory(minterClientBaseConfig, keyStartIndex, keyCapacity);
         final GenericObjectPoolConfig<VoucherClient> objectPoolConfig =
                 new GenericObjectPoolConfig<>();
+        log.info("Init VoucherMinterClientPool with global key index", keyStartIndex, "keyCapacity",
+                keyCapacity);
         objectPoolConfig.setMaxTotal(keyCapacity);
         objectPoolConfig.setMaxIdle(keyCapacity);
         objectPoolConfig.setMaxWaitMillis(120000); // FIXME: how to proper configure this from
@@ -29,6 +32,35 @@ public class VoucherMinterClientPool {
         objectPoolConfig.setTestOnCreate(true);
         // Build pool
         this.objectPool = new GenericObjectPool<>(voucherClientPoolFactory, objectPoolConfig);
+    }
+
+    public BatchMintVoucherResult batchMintAndResolveVoucher(final List<String> recipientList,
+            final List<String> landInfoHashStringList) {
+
+        VoucherClient client = null;
+        String transactionId = "";
+        List<VoucherMetadataModel> tokens = null;
+        try {
+            client = objectPool.borrowObject();
+            log.info(String.format(
+                    "[VoucherMinterClientPool.batchMint] use key index %d to send mint transaction",
+                    client.getAccountKeyIndex()));
+            transactionId = client.batchMintVoucher(recipientList, landInfoHashStringList);
+            tokens = client.resolveBatchMintVoucherTransaction(transactionId);
+            return BatchMintVoucherResult.builder().transactionId(transactionId).tokens(tokens)
+                    .build();
+        } catch (final Exception e) {
+            log.error("[VoucherMinterClientPool.batchMintVoucher] failed with", e);
+            if (transactionId.equals("")) {
+                throw new RuntimeException(e);
+            }
+            return BatchMintVoucherResult.builder().transactionId(transactionId).tokens(tokens)
+                    .build();
+        } finally {
+            if (client != null) {
+                objectPool.returnObject(client);
+            }
+        }
     }
 
     public String batchMintVoucher(final List<String> recipientList,
