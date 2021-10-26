@@ -252,10 +252,10 @@ public final class VoucherClient extends FlowSimpleClient {
 
         for (FlowEvent flowEvent : events) {
             if (flowEvent.getType().equals("A." + paymentTokenAddress + "." + paymentTokenName + ".TokensWithdrawn")) {
-                withdrawnEvent = flowEvent;
+                if (withdrawnEvent == null) withdrawnEvent = flowEvent;
             } else if (flowEvent.getType()
                     .equals("A." + paymentTokenAddress + "." + paymentTokenName + ".TokensDeposited")) {
-                depositedEvent = flowEvent;
+                if (depositedEvent == null) depositedEvent = flowEvent;
             }
         }
 
