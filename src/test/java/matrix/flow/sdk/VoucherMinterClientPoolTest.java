@@ -52,7 +52,7 @@ public class VoucherMinterClientPoolTest {
     @Test(timeout = 10000000)
     public void VoucherMinterClientPoolShouldWork() throws Exception {
         // Simulate concurrent requests in backend
-        final int simTransactionCount = 11;
+        final int simTransactionCount = 100;
         final CountDownLatch updateLatch = new CountDownLatch(simTransactionCount);
         final ExecutorService executorService = Executors.newFixedThreadPool(simTransactionCount);
 

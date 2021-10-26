@@ -61,7 +61,8 @@ public final class VoucherClientPoolFactory extends BasePooledObjectFactory<Vouc
             client.getObject().accessAPI.ping();
             return true;
         } catch (Exception e) {
-            log.warn("Validate failed");
+            System.out.println(e);
+            log.warn("Validate failed", e);
             return false;
         }
     }
