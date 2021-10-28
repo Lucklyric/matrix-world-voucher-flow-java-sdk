@@ -1,6 +1,7 @@
 package matrix.flow.sdk;
 
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -11,7 +12,7 @@ import com.nftco.flow.sdk.FlowAddress;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-
+import matrix.flow.sdk.model.BatchMintVoucherResult;
 import matrix.flow.sdk.model.VoucherClientConfig;
 import matrix.flow.sdk.model.VoucherMetadataModel;
 
@@ -64,8 +65,9 @@ public class VoucherMinterClientPoolTest {
             executorService.execute(new Thread(() -> {
                 try {
                     String timeStamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date());
-                    VoucherMetadataModel voucher = pool.mintVoucher(userAccountAddress.getBase16Value(), "TEST_HASH_POOL" + idx + timeStamp);
-                    System.out.println(voucher.toString());
+                    /* VoucherMetadataModel voucher = pool.mintVoucher(userAccountAddress.getBase16Value(), ); */
+                    BatchMintVoucherResult result = pool.batchMintAndResolveVoucher(Arrays.asList(userAccountAddress.getBase16Value()), Arrays.asList("TEST_HASH_POOL" + idx + timeStamp));
+                    System.out.println(result.toString());
                 } catch (final Exception e) {
                     e.printStackTrace();
                     throw new RuntimeException(e);
