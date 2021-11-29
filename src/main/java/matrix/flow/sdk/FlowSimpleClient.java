@@ -22,7 +22,9 @@ import com.nftco.flow.sdk.FlowScriptResponse;
 import com.nftco.flow.sdk.FlowTransactionResult;
 import com.nftco.flow.sdk.FlowTransactionStatus;
 import com.nftco.flow.sdk.HashAlgorithm;
+import com.nftco.flow.sdk.cadence.AddressField;
 import com.nftco.flow.sdk.cadence.ArrayField;
+import com.nftco.flow.sdk.cadence.IntNumberField;
 import com.nftco.flow.sdk.cadence.StringField;
 import com.nftco.flow.sdk.cadence.UFix64NumberField;
 import com.nftco.flow.sdk.cadence.UInt64NumberField;
@@ -50,25 +52,25 @@ public class FlowSimpleClient {
     }
 
     /**
-     * Verify user signatures to cryptographically verify the ownership of a Flow
-     * account by verifying a message was signed by a user's private key/s
+     * Verify user signatures to cryptographically verify the ownership of a Flow account by
+     * verifying a message was signed by a user's private key/s
      *
-     * @param message      singed raw message in Hex string
+     * @param message singed raw message in Hex string
      * @param publicKeyHex a list of public keys in Hex string
-     * @param weights      a list of corresponding weights of singed keys
-     * @param signAlgos    a list of singed algorithm, where 2 indicates ECDSA_P256
-     *                     others for ECDSA_secp256k1
-     * @param hashAlogs    a list of hash algorithm, where 2 for SHA2_256 others for
-     *                     SHA3_256
-     * @param signatures   a list of signatures which are singed by corresponding
-     *                     keypairs
+     * @param weights a list of corresponding weights of singed keys
+     * @param signAlgos a list of singed algorithm, where 2 indicates ECDSA_P256 others for
+     *        ECDSA_secp256k1
+     * @param hashAlogs a list of hash algorithm, where 2 for SHA2_256 others for SHA3_256
+     * @param signatures a list of signatures which are singed by corresponding keypairs
      *
      * @return boolean true if verified or false
      */
-    public boolean verifyUserSignature(final String message, final String[] publicKeysHex, final double[] weights,
-            final int[] signAlgos, final int[] hashAlogs, final String[] signatures) {
+    public boolean verifyUserSignature(final String message, final String[] publicKeysHex,
+            final double[] weights, final int[] signAlgos, final int[] hashAlogs,
+            final String[] signatures) {
 
-        final FlowScript script = new FlowScript(readScript("verify_sig_script.cdc.temp").getBytes());
+        final FlowScript script =
+                new FlowScript(readScript("verify_sig_script.cdc.temp").getBytes());
         final List<StringField> publicKeyHexC = new ArrayList<>();
         final List<UFix64NumberField> weightsC = new ArrayList<>();
         final List<UInt64NumberField> signAlgosC = new ArrayList<>();
@@ -90,9 +92,29 @@ public class FlowSimpleClient {
                         new FlowArgument(new ArrayField(signAlgosC)).getByteStringValue(),
                         new FlowArgument(new ArrayField(hashAlogsC)).getByteStringValue(),
                         new FlowArgument(new ArrayField(signaturesC)).getByteStringValue()));
-        FlowSimpleClient.log.info("Signatures are verified with True result");
 
         return result.getJsonCadence().getValue().toString().equals("true");
+    }
+
+    public boolean verifyUserSignatureCadence(final String message, final String accountAddress,
+            final List<Integer> keyIds, final List<String> signatures) {
+        final FlowScript script =
+                new FlowScript(readScript("verify_comp_sig_script.cdc.temp").getBytes());
+        final List<IntNumberField> keyIdsC = new ArrayList<>();
+        final List<StringField> signaturesC = new ArrayList<>();
+        for (int i = 0; i < keyIds.size(); ++i) {
+            keyIdsC.add(new IntNumberField(Integer.toString(keyIds.get(i))));
+            signaturesC.add(new StringField(signatures.get(i)));
+        }
+
+        final FlowScriptResponse result = this.accessAPI.executeScriptAtLatestBlock(script,
+                Arrays.asList(new FlowArgument(new StringField(message)).getByteStringValue(),
+                        new FlowArgument(new AddressField(accountAddress)).getByteStringValue(),
+                        new FlowArgument(new ArrayField(keyIdsC)).getByteStringValue(),
+                        new FlowArgument(new ArrayField(signaturesC)).getByteStringValue()));
+        final String resultStr = result.getJsonCadence().getValue().toString();
+        log.info("verifyUserSignatureCadence result: " + resultStr);
+        return resultStr.equals("true");
     }
 
     /**
@@ -101,12 +123,12 @@ public class FlowSimpleClient {
      * @param topLeftX UInt64 topLeftX coordinate
      * @param topLeftY UInt64 topLeftY coordinate
      * @param height UInt64 height of square lands
-     * @param width  UInt64 width of square lands
+     * @param width UInt64 width of square lands
      *
      * @return LandInfoHashHexString of a square of Lands
      */
-    public String generateLandInfoHash(final Integer topLeftX, final Integer topLeftY, final Integer height,
-            final Integer width) {
+    public String generateLandInfoHash(final Integer topLeftX, final Integer topLeftY,
+            final Integer height, final Integer width) {
         final byte[] topLeftXB = Longs.toByteArray(Integer.toUnsignedLong(topLeftX));
         final byte[] topLeftYB = Longs.toByteArray(Integer.toUnsignedLong(topLeftY));
         final byte[] heightB = Longs.toByteArray(Integer.toUnsignedLong(height));
@@ -115,16 +137,22 @@ public class FlowSimpleClient {
         return hasher.hashAsHexString(Bytes.concat(topLeftXB, topLeftYB, heightB, widthB));
     }
 
-    public String generateLandInfoHashCadence(final Integer topLeftX, final Integer topLeftY, final Integer height,
-            final Integer width) {
+    public String generateLandInfoHashCadence(final Integer topLeftX, final Integer topLeftY,
+            final Integer height, final Integer width) {
 
-        final FlowScript script = new FlowScript(readScript("generate_land_hash.cdc.temp").getBytes());
+        final FlowScript script =
+                new FlowScript(readScript("generate_land_hash.cdc.temp").getBytes());
 
         final FlowScriptResponse result = this.accessAPI.executeScriptAtLatestBlock(script,
-                Arrays.asList(new FlowArgument(new UInt64NumberField(topLeftX.toString())).getByteStringValue(),
-                        new FlowArgument(new UInt64NumberField(topLeftY.toString())).getByteStringValue(),
-                        new FlowArgument(new UInt64NumberField(height.toString())).getByteStringValue(),
-                        new FlowArgument(new UInt64NumberField(width.toString())).getByteStringValue()));
+                Arrays.asList(
+                        new FlowArgument(new UInt64NumberField(topLeftX.toString()))
+                                .getByteStringValue(),
+                        new FlowArgument(new UInt64NumberField(topLeftY.toString()))
+                                .getByteStringValue(),
+                        new FlowArgument(new UInt64NumberField(height.toString()))
+                                .getByteStringValue(),
+                        new FlowArgument(new UInt64NumberField(width.toString()))
+                                .getByteStringValue()));
 
         return result.getJsonCadence().getValue().toString();
     }
@@ -175,12 +203,13 @@ public class FlowSimpleClient {
     }
 
     private FlowAddress getAccountCreatedAddress(final FlowTransactionResult txResult) {
-        if (!txResult.getStatus().equals(FlowTransactionStatus.SEALED) || txResult.getErrorMessage().length() > 0) {
+        if (!txResult.getStatus().equals(FlowTransactionStatus.SEALED)
+                || txResult.getErrorMessage().length() > 0) {
             return null;
         }
 
-        final String rez = txResult.getEvents().get(0).getEvent().getValue().getFields()[0].getValue().getValue()
-                .toString();
+        final String rez = txResult.getEvents().get(0).getEvent().getValue().getFields()[0]
+                .getValue().getValue().toString();
 
         return new FlowAddress(rez.substring(2));
     }

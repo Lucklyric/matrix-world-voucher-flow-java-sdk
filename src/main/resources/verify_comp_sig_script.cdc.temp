@@ -1,0 +1,30 @@
+import Crypto
+
+pub fun main(
+  message: String,
+  addr: Address,
+  keyIds: [Int],
+  signatures: [String],
+): Bool {
+    let acct = getAccount(addr)
+    var index = 0
+    for keyId in keyIds {
+        let key = acct.keys.get(keyIndex: keyId)!
+        let publicKey = PublicKey(
+            publicKey: key.publicKey.publicKey,
+            signatureAlgorithm: key.publicKey.signatureAlgorithm,
+        )
+        let signature = signatures[index]
+        let check = publicKey.verify(
+            signature: signature.decodeHex(),
+            signedData: message.decodeHex(),
+            domainSeparationTag: "FLOW-V0.0-user",
+            hashAlgorithm: key.hashAlgorithm,
+        )
+        if !check {
+            return false
+        }
+        index = index + 1
+    }
+    return true
+}
