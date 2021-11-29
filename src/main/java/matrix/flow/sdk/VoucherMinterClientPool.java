@@ -14,6 +14,7 @@ import matrix.flow.sdk.model.VoucherMetadataModel;
 public class VoucherMinterClientPool {
     private final GenericObjectPool<VoucherClient> objectPool;
 
+
     public VoucherMinterClientPool(final int keyStartIndex, final int keyCapacity,
             final VoucherClientConfig minterClientBaseConfig) {
 
@@ -32,6 +33,35 @@ public class VoucherMinterClientPool {
         objectPoolConfig.setTestOnCreate(true);
         // Build pool
         this.objectPool = new GenericObjectPool<>(voucherClientPoolFactory, objectPoolConfig);
+    }
+
+    /**
+     * Very user composite signatures
+     *
+     * @param message raw message in hex
+     * @param accountAddress account address
+     * @param keyIds keys ids corresponding to signatures
+     * @param signatures signed using above keys
+     *
+     * @return true means verified successfully
+     */
+    public boolean verifyUserSignatureCadence(final String message, final String accountAddress,
+            final List<Integer> keyIds, final List<String> signatures) {
+        VoucherClient client = null;
+        try {
+            client = objectPool.borrowObject();
+            log.info(String.format(
+                    "[VoucherMinterClientPool.batchMint] use key index %d to send mint transaction",
+                    client.getAccountKeyIndex()));
+            return client.verifyUserSignatureCadence(message, accountAddress, keyIds, signatures);
+        } catch (final Exception e) {
+            log.error("[VoucherMinterClientPool.batchMintVoucher] failed with", e);
+            throw new RuntimeException(e);
+        } finally {
+            if (client != null) {
+                objectPool.returnObject(client);
+            }
+        }
     }
 
     public BatchMintVoucherResult batchMintAndResolveVoucher(final List<String> recipientList,

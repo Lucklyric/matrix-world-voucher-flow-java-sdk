@@ -166,6 +166,41 @@ public void voucherClientPoolconcurrentlysendTransaction() throws Exception {
     objectPool.close();
 }
 ```
+
+Use object pool to check user signature on chain
+```java
+/**
+* Very user composite signatures
+*
+* @param message raw message in hex
+* @param accountAddress account address
+* @param keyIds keys ids corresponding to signatures
+* @param signatures signed using above keys
+*
+* @return true means verified successfully
+*/
+public boolean verifyUserSignatureCadence(final String message, final String accountAddress,
+        final List<Integer> keyIds, final List<String> signatures);
+
+// example
+final String message = "TEST_HASH_MESSAGE";
+final String privateKeyHex =
+        "2eae2f31cb5b756151fa11d82949c634b8f28796a711d7eb1e52cc301ed11111";
+
+final PrivateKey privateKey = Crypto.decodePrivateKey(privateKeyHex);
+
+final Signer signer = Crypto.getSigner(privateKey, HashAlgorithm.SHA3_256);
+final byte[] signature = signer.signAsUser(message.getBytes());
+
+final VoucherMinterClientPool pool = new VoucherMinterClientPool(0, 10, adminClientConfig);
+final List<Integer> keyIds = new ArrayList<>();
+keyIds.add(0);
+final List<String> signatures = new ArrayList<>();
+signatures.add(Hex.encodeHexString(signature));
+final Boolean result = pool.verifyUserSignatureCadence(
+        Hex.encodeHexString(message.getBytes()), "0xf8d6e0586b0a20c7", keyIds, signatures);
+```
+
 Check [Tests](./voucher-sdk/src/test/java/matrix/flow/sdk/AppTest.java) for full example
 
 ### Test
